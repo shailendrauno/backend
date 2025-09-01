@@ -17,7 +17,7 @@ const registerUser = asyncHandler( async (req, res) =>{
 
 
     const {fullName, email, username, password} = req.body
-    console.log("email:", email);
+    // console.log("email:", email);
     
     if(
         [fullName, email, username, password].some((field)=>
@@ -26,14 +26,22 @@ const registerUser = asyncHandler( async (req, res) =>{
         throw new ApiError(400, "All field are required")
     }
 
-   const existedUser = User.findOne({
+   const existedUser = await User.findOne({
         $or: [ {username},  {email} ]
     })
     if(existedUser){
         throw new ApiError(409, "User with email or username is exist already")
     }
+    // console.log(req.files);
+    
+
     const avatarLocalPath = req.files?.avatar[0]?.path;
-    const coverImageLocalPath = req.files?.coverImage[0].path;
+    // const coverImageLocalPath = req.files?.coverImage[0].path;
+
+    let coverImageLocalPath;
+    if(req.files && Array.isArray(req.files.coverImage) && req.files.coverImage.length >0)[
+      coverImageLocalPath = req.files.coverImage[0].path
+    ]
 
     if(!avatarLocalPath){
         throw new ApiError(400, "Avatar is required")
@@ -68,6 +76,36 @@ const registerUser = asyncHandler( async (req, res) =>{
     new ApiResponse(200, createdUser, "User create succesfully")
   )
 
+})
+
+
+const loginUser = asyncHandler(async (req, res) => {
+    //req body -> data
+    // username or email
+    //find the user
+    // check pass
+    //access and refresh token
+    //send cookie
+
+    const {email, username, password} = req.body
+    if(!username || !email){
+      throw new ApiError(400, "username or email is required")
+
+    }
+
+   const user = await User.findOne({
+      $or:[{username}, {email}]
+    })
+
+    if(!user){
+      throw new ApiError(404, "user does not exist")
+    }
+
+   const isPasswordValid = await  user.isPasswordCorrect(password)
+
+   if(!isPasswordValid){
+      throw new ApiError(401, "Invalid user creditial")
+    }
 })
 
 
